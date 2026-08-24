@@ -1,0 +1,10 @@
+
+namespace Server
+{
+
+    class HttpServer
+    {
+        
+    };
+
+}
