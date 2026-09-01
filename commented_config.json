@@ -1,0 +1,7 @@
+{
+    "server":
+    {
+        "enable_max_performance": true, // ignores "max_concurrent_threads" option. recommended
+        "max_concurrent_threads": 4 // this should never be more than the number of cores in your CPU
+    }
+}

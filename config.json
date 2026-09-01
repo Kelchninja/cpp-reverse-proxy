@@ -1,0 +1,25 @@
+{
+    "server":
+    {
+        "settings":
+        {
+            "enable_max_performance": true,
+            "max_concurrent_threads": 4
+        }
+    },
+
+    "security":
+    {
+        "settings": {}
+    },
+
+    "processing":
+    {
+        "settings": {}
+    },
+
+    "API":
+    {
+        "settings": {}
+    }
+}
