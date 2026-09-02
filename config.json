@@ -1,25 +1,12 @@
 {
-    "server":
-    {
-        "settings":
-        {
-            "enable_max_performance": true,
-            "max_concurrent_threads": 4
-        }
+    "server": {
+        "auto_detect_cores": true,
+        "available_cores": 0
     },
 
-    "security":
-    {
-        "settings": {}
-    },
+    "security": {},
 
-    "processing":
-    {
-        "settings": {}
-    },
+    "processing": {},
 
-    "API":
-    {
-        "settings": {}
-    }
+    "API": {}
 }

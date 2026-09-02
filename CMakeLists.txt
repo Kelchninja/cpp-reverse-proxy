@@ -10,14 +10,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    add_compile_options(-Wall -Wextra -Werror)
+    set(PROJECT_WARNING_FLAGS -Wall -Wextra -Werror)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    add_compile_options(/W4 /WX)
+    set(PROJECT_WARNING_FLAGS /W4 /WX)
 endif()
 set(CMAKE_CXX_FLAGS_DEBUG "-O0")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 
-option(BUILD_TESTS "Build unit tests" OFF)
+option(BUILD_TESTS "Build unit tests" ON)
 
 include(FetchContent)
 
@@ -33,7 +33,6 @@ FetchContent_Declare(llhttp
 set(LLHTTP_BUILD_SHARED_LIBS OFF CACHE INTERNAL "")
 set(LLHTTP_BUILD_STATIC_LIBS ON CACHE INTERNAL "")
 FetchContent_MakeAvailable(llhttp)
-
 # --- end llhttp ---
 
 # --- config (ServerConfig, SecurityConfig, ProcessingConfig, all in one file) ---
@@ -45,6 +44,7 @@ target_include_directories(config PUBLIC
 )
 target_link_libraries(config PUBLIC nlohmann_json::nlohmann_json)
 target_compile_features(config PUBLIC cxx_std_23)
+target_compile_options(config PRIVATE ${PROJECT_WARNING_FLAGS})
 
 # --- Processing DLL ---
 # add_library(processing SHARED
@@ -63,12 +63,13 @@ add_executable(server
 )
 
 target_compile_features(server PRIVATE cxx_std_23)
+target_compile_options(server PRIVATE ${PROJECT_WARNING_FLAGS})
 
 target_include_directories(server PRIVATE
     server/include
     API/include
 )
-target_link_libraries(server PRIVATE llhttp asio::asio config)
+target_link_libraries(server PRIVATE llhttp::llhttp asio::asio config)
 
 
 # Verbindet beide: Server linkt gegen processing
@@ -80,7 +81,8 @@ if(BUILD_TESTS)
     enable_testing()
     find_package(GTest CONFIG REQUIRED)
 
-    # Server
+    # --- Server ---
+
     add_executable(server_tests
         tests/server/server_tests.cpp
     )
@@ -96,23 +98,26 @@ if(BUILD_TESTS)
         GTest::gtest_main
     )
     target_compile_features(server_tests PRIVATE cxx_std_23)
+    target_compile_options(server_tests PRIVATE ${PROJECT_WARNING_FLAGS})
 
-    # Verarbeitung (processing)
-    # add_executable(processing_tests
-    #     tests/processing/processing_tests.cpp
-    # )
-    # target_include_directories(processing_tests PRIVATE
-    #     common/include
-    # )
-    # target_link_libraries(processing_tests PRIVATE
-    #     processing
-    #     config
-    #     GTest::gtest
-    #     GTest::gtest_main
-    # )
-    # target_compile_features(processing_tests PRIVATE cxx_std_23)
+    # --- Verarbeitung (processing) ---
+    
+    add_executable(processing_tests
+        tests/processing/processing_tests.cpp
+    )
+    target_include_directories(processing_tests PRIVATE
+        common/include
+    )
+    target_link_libraries(processing_tests PRIVATE
+        processing
+        config
+        GTest::gtest
+        GTest::gtest_main
+    )
+    target_compile_features(processing_tests PRIVATE cxx_std_23)
 
-    # API
+    # --- API ---
+
     add_executable(api_tests
         tests/api/api_tests.cpp
     )
@@ -124,8 +129,10 @@ if(BUILD_TESTS)
         GTest::gtest_main
     )
     target_compile_features(api_tests PRIVATE cxx_std_23)
+    target_compile_options(api_tests PRIVATE ${PROJECT_WARNING_FLAGS})
 
-    # Security
+    # --- Security ---
+
     add_executable(security_tests
         tests/security/security_tests.cpp
     )
@@ -139,10 +146,28 @@ if(BUILD_TESTS)
         config
     )
     target_compile_features(security_tests PRIVATE cxx_std_23)
+    target_compile_options(security_tests PRIVATE ${PROJECT_WARNING_FLAGS})
+
+    # --- Config ---
+
+    add_executable(config_tests 
+        tests/config/config_tests.cpp
+    )
+    target_include_directories(config_tests PRIVATE
+        config/include
+    )
+    target_link_libraries(config_tests PRIVATE
+        GTest::gtest
+        GTest::gtest_main
+        config
+    )
+    target_compile_features(config_tests PRIVATE cxx_std_23)
+    target_compile_options(config_tests PRIVATE ${PROJECT_WARNING_FLAGS})
 
     include(GoogleTest)
     gtest_discover_tests(server_tests)
     # gtest_discover_tests(processing_tests)
     gtest_discover_tests(api_tests)
     gtest_discover_tests(security_tests)
+    gtest_discover_tests(config_tests)
 endif()

@@ -1,7 +1,12 @@
 {
-    "server":
-    {
-        "enable_max_performance": true, // ignores "max_concurrent_threads" option. recommended
-        "max_concurrent_threads": 4 // this should never be more than the number of cores in your CPU
-    }
+    "server": {
+        "auto_detect_cores": true, // recommended to enable. only turn off, if the server is running in a docker container with limited cpu cores
+        "available_cores": 0 // ignored, when auto detect is enabled. set this to the affinity of your docker container or the process youre running the program on. if <= 0 the server enables auto detect.
+    },
+
+    "security": {},
+
+    "processing": {},
+
+    "API": {}
 }
