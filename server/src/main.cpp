@@ -13,15 +13,20 @@ int main()
     config::ServerConfig server_config{config::ServerConfig::load(config_path)};
 
     // setting up server IO
-    asio::io_context io_ctx;
-    tcp::acceptor acceptor{io_ctx, tcp::endpoint{tcp::v4(), 12345}};
+    asio::io_context io;
+    tcp::acceptor acceptor{io, tcp::endpoint{tcp::v4(), 12345}};
 
     // creating server
-    server::Server server{io_ctx, std::move(acceptor), server_config};
+    server::Server server{io, std::move(acceptor), server_config};
     server.init();
     server.run();
 
-
     // shutdown and cleanup
+    asio::signal_set signals{io, SIGINT, SIGTERM};
+    signals.async_wait([&server](const asio::error_code&, int)
+    {
+        server.stop();
+    });
     
+    server.wait();
 }

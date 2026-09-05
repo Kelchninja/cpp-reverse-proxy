@@ -17,11 +17,12 @@ namespace server
 
         void init();
         void run();
+        void wait();
         void stop();
         asio::awaitable<void> process();
         
         private:
-        enum {ready, running, stopped} state_;
+        enum {uninitialized, initialized, running, stopped} state_;
         std::vector<std::jthread> threads_;
         asio::io_context& io_context_;
         asio::ip::tcp::acceptor acceptor_;

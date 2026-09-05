@@ -1,12 +1,14 @@
 {
     "server": {
         "auto_detect_cores": true,
-        "available_cores": 0
+        "available_cores": 0,
+        "IPv4": "127.0.0.1",
+        "port": 8080
     },
 
     "security": {},
 
     "processing": {},
 
-    "API": {}
+    "api": {}
 }
