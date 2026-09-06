@@ -11,7 +11,6 @@
 static constexpr const char* DEFAULT_IPV4{"127.0.0.1"};
 static constexpr uint16_t DEFAULT_PORT{8080};
 
-// Schreibt exakt die uebergebenen Eintraege, ohne Defaults.
 static nlohmann::json build_json_raw(const std::vector<std::pair<std::string, nlohmann::json>>& serverEntries)
 {
     nlohmann::json j;
@@ -28,7 +27,6 @@ static nlohmann::json build_json_raw(const std::vector<std::pair<std::string, nl
     return j;
 }
 
-// Fuellt alle Pflichtfelder mit Defaults; uebergebene Eintraege ueberschreiben diese.
 static nlohmann::json build_json(const std::vector<std::pair<std::string, nlohmann::json>>& overrides)
 {
     std::vector<std::pair<std::string, nlohmann::json>> entries{
@@ -146,7 +144,7 @@ TEST(ConfigTest, MissingAutoDetectCores_Throws)
     EXPECT_THROW(config::ServerConfig::load(CONFIG_PATH), std::runtime_error);
 }
 
-// --- IPv4 / port ---
+// ipv4 iund port
 
 TEST(ConfigTest, ValidConfig_IPv4AndPort)
 {
