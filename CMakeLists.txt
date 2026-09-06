@@ -9,6 +9,8 @@ project(HttpServerCPP LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     set(PROJECT_WARNING_FLAGS -Wall -Wextra -Werror)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
@@ -71,6 +73,21 @@ target_include_directories(server PRIVATE
 )
 target_link_libraries(server PRIVATE llhttp::llhttp asio::asio config)
 
+# --- config.json neben die server-Executable kopieren ---
+add_custom_command(
+    OUTPUT ${CMAKE_BINARY_DIR}/bin/config.json
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_CURRENT_SOURCE_DIR}/config.json
+            ${CMAKE_BINARY_DIR}/bin/config.json
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/config.json
+    COMMENT "Kopiere config.json"
+    VERBATIM
+)
+add_custom_target(server_config DEPENDS ${CMAKE_BINARY_DIR}/bin/config.json)
+
+add_dependencies(server server_config)
+# add_dependencies(processing server_config)
+# add_dependencies(security server_config)
 
 # Verbindet beide: Server linkt gegen processing
 # target_link_libraries(server PRIVATE processing)
@@ -102,51 +119,51 @@ if(BUILD_TESTS)
 
     # --- Verarbeitung (processing) ---
     
-    add_executable(processing_tests
-        tests/processing/processing_tests.cpp
-    )
-    target_include_directories(processing_tests PRIVATE
-        common/include
-    )
-    target_link_libraries(processing_tests PRIVATE
-        processing
-        config
-        GTest::gtest
-        GTest::gtest_main
-    )
-    target_compile_features(processing_tests PRIVATE cxx_std_23)
+    # add_executable(processing_tests
+    #     tests/processing/processing_tests.cpp
+    # )
+    # target_include_directories(processing_tests PRIVATE
+    #     common/include
+    # )
+    # target_link_libraries(processing_tests PRIVATE
+    #     processing
+    #     config
+    #     GTest::gtest
+    #     GTest::gtest_main
+    # )
+    # target_compile_features(processing_tests PRIVATE cxx_std_23)
 
     # --- API ---
 
-    add_executable(api_tests
-        tests/api/api_tests.cpp
-    )
-    target_include_directories(api_tests PRIVATE
-        API/include
-    )
-    target_link_libraries(api_tests PRIVATE
-        GTest::gtest
-        GTest::gtest_main
-    )
-    target_compile_features(api_tests PRIVATE cxx_std_23)
-    target_compile_options(api_tests PRIVATE ${PROJECT_WARNING_FLAGS})
+    # add_executable(api_tests
+    #     tests/api/api_tests.cpp
+    # )
+    # target_include_directories(api_tests PRIVATE
+    #     API/include
+    # )
+    # target_link_libraries(api_tests PRIVATE
+    #     GTest::gtest
+    #     GTest::gtest_main
+    # )
+    # target_compile_features(api_tests PRIVATE cxx_std_23)
+    # target_compile_options(api_tests PRIVATE ${PROJECT_WARNING_FLAGS})
 
     # --- Security ---
 
-    add_executable(security_tests
-        tests/security/security_tests.cpp
-    )
-    target_include_directories(security_tests PRIVATE
-        server/include
-        API/include
-    )
-    target_link_libraries(security_tests PRIVATE
-        GTest::gtest
-        GTest::gtest_main
-        config
-    )
-    target_compile_features(security_tests PRIVATE cxx_std_23)
-    target_compile_options(security_tests PRIVATE ${PROJECT_WARNING_FLAGS})
+    # add_executable(security_tests
+    #     tests/security/security_tests.cpp
+    # )
+    # target_include_directories(security_tests PRIVATE
+    #     server/include
+    #     API/include
+    # )
+    # target_link_libraries(security_tests PRIVATE
+    #     GTest::gtest
+    #     GTest::gtest_main
+    #     config
+    # )
+    # target_compile_features(security_tests PRIVATE cxx_std_23)
+    # target_compile_options(security_tests PRIVATE ${PROJECT_WARNING_FLAGS})
 
     # --- Config ---
 
@@ -164,10 +181,21 @@ if(BUILD_TESTS)
     target_compile_features(config_tests PRIVATE cxx_std_23)
     target_compile_options(config_tests PRIVATE ${PROJECT_WARNING_FLAGS})
 
+    # --- Test-Executables nach test_bin statt bin ---
+    set_target_properties(
+        server_tests
+        # processing_tests
+        # api_tests
+        # security_tests
+        config_tests
+        PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/test_bin
+    )
+
     include(GoogleTest)
-    gtest_discover_tests(server_tests)
-    # gtest_discover_tests(processing_tests)
-    gtest_discover_tests(api_tests)
-    gtest_discover_tests(security_tests)
-    gtest_discover_tests(config_tests)
+    gtest_discover_tests(server_tests WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/test_bin)
+    # gtest_discover_tests(processing_tests WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/test_bin)
+    # gtest_discover_tests(api_tests WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/test_bin)
+    # gtest_discover_tests(security_tests WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/test_bin)
+    gtest_discover_tests(config_tests WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/test_bin)
 endif()

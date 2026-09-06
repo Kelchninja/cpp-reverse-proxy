@@ -10,7 +10,7 @@ int main()
 
     // configuration loading
     std::filesystem::path config_path{"config.json"};
-    config::ServerConfig server_config{config::ServerConfig::load(config_path)};
+    config::ServerConfig server_config = config::ServerConfig::load(config_path);
 
     // setting up server IO
     asio::io_context io;

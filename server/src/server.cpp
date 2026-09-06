@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <stdexcept>
 #include <thread>
+#include <iostream>
 
 namespace {
 
@@ -101,6 +102,7 @@ asio::awaitable<void> Server::process()
     while (true)
     {
         auto socket{co_await acceptor_.async_accept()};
+        std::cout << "received a connection" << std::endl;
     }
 }
 
