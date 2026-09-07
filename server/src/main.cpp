@@ -13,6 +13,9 @@ int main()
     std::filesystem::path config_path{"config.json"};
     config::ServerConfig server_config = config::ServerConfig::load(config_path);
 
+    std::println("config loaded - running cores: {} (auto-detect: {})", 
+        server_config.available_cores, server_config.auto_detect_cores);
+
     // setting up server IO
     asio::io_context io;
     tcp::acceptor acceptor{io, 
@@ -22,13 +25,20 @@ int main()
     // creating server
     server::Server server{io, std::move(acceptor), server_config};
     server.init();
+
+    std::println("server initialized - listening on {}:{}", 
+        server_config.ipv4, server_config.port);
+    
     server.run();
+
+    std::println("server running.");
 
     // shutdown and cleanup
     asio::signal_set signals{io, SIGINT, SIGTERM};
     signals.async_wait([&server](const asio::error_code&, int)
     {
         server.stop();
+        std::println("server stopped.");
     });
     
     // keeping server alive (no busy waiting)
