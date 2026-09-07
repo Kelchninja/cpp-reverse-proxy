@@ -1,4 +1,3 @@
-#include "common.h"
 #include "server.hpp"
 #include "config.hpp"
 #include <asio/awaitable.hpp>
@@ -23,7 +22,7 @@ namespace {
 using namespace server;
 
 Server::Server(asio::io_context& io_context, asio::ip::tcp::acceptor acceptor, const config::ServerConfig& config)
-: state_{uninitialized}, io_context_{io_context}, acceptor_{std::move(acceptor)}, config_{config} {}
+: state_{State::uninitialized}, io_context_{io_context}, acceptor_{std::move(acceptor)}, config_{config} {}
 
 Server::~Server()
 {
@@ -32,25 +31,25 @@ Server::~Server()
 
 void Server::Server::init()
 {
-    if (state_ != uninitialized)
+    if (state_ != State::uninitialized)
     {
         throw std::runtime_error("Server is already initialized");
     }
     asio::co_spawn(io_context_, process(), asio::detached);
-    state_ = initialized;
+    state_ = State::initialized;
 }
 
 void Server::run()
 {
     switch (state_)
     {
-        case uninitialized:
+        case State::uninitialized:
         {
             throw std::runtime_error("Server is not initialized");
             break;
         }
-        case running: return;
-        case stopped:
+        case State::running: return;
+        case State::stopped:
         {
             io_context_.restart();
             threads_.clear();
@@ -61,12 +60,12 @@ void Server::run()
             break;
     }
 
-    if (state_ == running)
+    if (state_ == State::running)
     {
         return;
     }
 
-    if (state_ == stopped)
+    if (state_ == State::stopped)
     {
         io_context_.restart();
         threads_.clear();
@@ -80,7 +79,7 @@ void Server::run()
         threads_.emplace_back([this](){ io_context_.run(); });
     }
 
-    state_ = running;
+    state_ = State::running;
 }
 
 void Server::wait()
@@ -94,7 +93,7 @@ void Server::wait()
 void Server::stop()
 {
     io_context_.stop();
-    state_ = stopped;
+    state_ = State::stopped;
 }
 
 asio::awaitable<void> Server::process()

@@ -48,14 +48,22 @@ target_link_libraries(config PUBLIC nlohmann_json::nlohmann_json)
 target_compile_features(config PUBLIC cxx_std_23)
 target_compile_options(config PRIVATE ${PROJECT_WARNING_FLAGS})
 
-# --- Processing DLL ---
-# add_library(processing SHARED
-#     processing/src/processing.cpp
-# )
-# target_include_directories(processing PUBLIC
-#     common/include
-# )
-# target_link_libraries(processing PUBLIC config)
+# --- Processing .dll / .dylib / .so ---
+add_library(processing SHARED
+    processing/src/processing.cpp
+)
+
+target_include_directories(processing PUBLIC
+    processing/include
+)
+
+target_link_libraries(processing PRIVATE config)
+
+target_compile_options(processing PRIVATE
+    $<$<NOT:$<PLATFORM_ID:Windows>>:-fvisibility=hidden>
+)
+
+target_compile_definitions(processing PRIVATE PROCESSING_EXPORTS)
 
 
 # --- Server EXE ---

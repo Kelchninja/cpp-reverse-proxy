@@ -22,7 +22,8 @@ namespace server
         asio::awaitable<void> process();
         
         private:
-        enum {uninitialized, initialized, running, stopped} state_;
+        private:
+        enum class State { uninitialized, initialized, running, stopped } state_;
         std::vector<std::jthread> threads_;
         asio::io_context& io_context_;
         asio::ip::tcp::acceptor acceptor_;

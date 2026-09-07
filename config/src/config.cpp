@@ -12,6 +12,7 @@
 
 namespace
 {
+    // TODO: save parse into a static var, so it doesnt have to parse the same config every time.
     inline nlohmann::json load_json(const std::filesystem::path& path) {
         std::ifstream file{path};
         if (!file)

@@ -1,6 +1,7 @@
 #include "config.hpp"
 #include "server.hpp"
 #include <asio.hpp>
+#include <asio/ip/address_v4.hpp>
 #include <filesystem>
 
 
@@ -14,7 +15,9 @@ int main()
 
     // setting up server IO
     asio::io_context io;
-    tcp::acceptor acceptor{io, tcp::endpoint{tcp::v4(), 12345}};
+    tcp::acceptor acceptor{io, 
+        tcp::endpoint{asio::ip::make_address_v4(server_config.ipv4), 
+            server_config.port}};
 
     // creating server
     server::Server server{io, std::move(acceptor), server_config};
@@ -28,5 +31,8 @@ int main()
         server.stop();
     });
     
+    // keeping server alive (no busy waiting)
     server.wait();
+
+    return 0;
 }
