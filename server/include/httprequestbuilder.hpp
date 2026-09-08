@@ -19,9 +19,9 @@ public:
         method_ = method;
     }
 
-    void set_url(std::string url)
+    void append_url(const char *data, size_t len)
     {
-        url_ = std::move(url);
+        url_.append(data, len);
     }
 
     void set_version(HttpVersion version)
@@ -32,6 +32,23 @@ public:
     void add_header(std::string field, std::string value)
     {
         headers_.emplace_back(std::move(field), std::move(value));
+    }
+
+    std::vector<std::pair<std::string, std::string>> parse_query_params(std::string url)
+    {
+        // enum class State
+        // {
+        //     on_path,
+        //     on_
+        // } static state;
+
+        std::string query_str{url.}
+        std::vector<std::pair<std::string, std::string>> queries;
+        
+        for (auto sym : url)
+        {
+
+        }
     }
 
     void add_query_param(std::string key, std::string value)
