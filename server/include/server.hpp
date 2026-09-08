@@ -19,9 +19,11 @@ namespace server
         void run();
         void wait();
         void stop();
-        asio::awaitable<void> process();
         
-        private:
+        protected:
+        virtual asio::awaitable<void> process();
+        virtual asio::awaitable<void> handleClient(asio::ip::tcp::socket);
+
         private:
         enum class State { uninitialized, initialized, running, stopped } state_;
         std::vector<std::jthread> threads_;

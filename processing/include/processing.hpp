@@ -1,3 +1,4 @@
+#pragma once
 #include "export.hpp"
 
 namespace processing

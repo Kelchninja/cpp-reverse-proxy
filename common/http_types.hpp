@@ -1,12 +1,10 @@
-#include "export.hpp"
-#include <string>
-#include <string_view>
-#include <unordered_map>
-#include <vector>
+#pragma once
 
-namespace processing
+#include <string_view>
+
+namespace http
 {
-    // --- enums ---
+        // --- enums ---
 
     enum class HttpMethod
     {
@@ -18,15 +16,15 @@ namespace processing
         HEAD,
         OPTIONS,
         CONNECT,
-        TRACE
+        TRACE,
+
+        UNKNOWN
     };
 
-    enum class HttpVersion
+    struct HttpVersion
     {
-        Http1_0,
-        Http1_1,
-        Http2,
-        Http3
+        int32_t version_major;
+        int32_t version_minor_;
     };
 
     // --- helper functions ---
@@ -44,31 +42,22 @@ namespace processing
             case HttpMethod::OPTIONS: return "OPTIONS";
             case HttpMethod::CONNECT: return "CONNECT";
             case HttpMethod::TRACE:   return "TRACE";
+            default:
         }
         return "";
     }
 
     constexpr std::string_view toString(HttpVersion v)
     {
-        switch (v)
+        switch (v.version_major * 10 + v.version_minor_)
         {
-            case HttpVersion::Http1_0: return "HTTP/1.0";
-            case HttpVersion::Http1_1: return "HTTP/1.1";
-            case HttpVersion::Http2:   return "HTTP/2";
-            case HttpVersion::Http3:   return "HTTP/3";
+            case 10: return "HTTP/1.0";
+            case 11: return "HTTP/1.1";
+            case 20: return "HTTP/2";
+            case 30: return "HTTP/3";
+            default: return "";
         }
-        return "";
     }
-
-    // --- domain structs / classes ---
-
-    struct HttpRequest
-    {
-        const HttpMethod method;
-        const std::string path;
-        const HttpVersion version;
-        const std::unordered_map<std::string, std::string> query_params;
-        const std::unordered_map<std::string, std::string> headers;
-        const std::vector<char> body;
-    };
 }
+
+

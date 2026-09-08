@@ -55,6 +55,7 @@ add_library(processing SHARED
 
 target_include_directories(processing PUBLIC
     processing/include
+    common
 )
 
 target_link_libraries(processing PRIVATE config)
@@ -70,6 +71,7 @@ target_compile_definitions(processing PRIVATE PROCESSING_EXPORTS)
 add_executable(server
     server/src/main.cpp
     server/src/server.cpp
+    server/src/httprequestbuilder.cpp
 )
 
 target_compile_features(server PRIVATE cxx_std_23)
@@ -78,6 +80,7 @@ target_compile_options(server PRIVATE ${PROJECT_WARNING_FLAGS})
 target_include_directories(server PRIVATE
     server/include
     API/include
+    common
 )
 target_link_libraries(server PRIVATE llhttp::llhttp asio::asio config)
 

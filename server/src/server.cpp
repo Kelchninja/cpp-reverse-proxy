@@ -1,9 +1,13 @@
 #include "server.hpp"
 #include "config.hpp"
+#include "llhttp.h"
 #include <asio/awaitable.hpp>
+#include <asio/basic_stream_socket.hpp>
+#include <asio/co_spawn.hpp>
 #include <asio/detached.hpp>
 #include <asio/io_context.hpp>
 #include <asio/ip/tcp.hpp>
+#include <asio/streambuf.hpp>
 #include <asio/this_coro.hpp>
 #include <cstddef>
 #include <stdexcept>
@@ -102,10 +106,28 @@ asio::awaitable<void> Server::process()
         auto socket{co_await acceptor_.async_accept()};
         std::println("received a connection");
 
-        socket.
+        asio::co_spawn(socket.get_executor(), handleClient(std::move(socket)), 
+        asio::detached);
     }
 }
 
 
+asio::awaitable<void> handleClient(asio::ip::tcp::socket socket)
+{
+    bool msg_completed{false};
+    asio::streambuf buf;
 
+    llhttp_t parser;
+    llhttp_settings_t settings;
+    llhttp_settings_init(&settings);
+
+
+    llhttp_init(&parser, HTTP_REQUEST, &settings);
+
+    while (!msg_completed)
+    {
+        size_t bytes_read{co_await socket.async_read_some(buf)};
+    }
+
+}
 

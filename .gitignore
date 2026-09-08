@@ -3,3 +3,4 @@
 /.vscode
 /vcpkg_installed
 /.claude
+.DS_Store
