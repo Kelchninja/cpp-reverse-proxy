@@ -71,7 +71,7 @@ target_compile_definitions(processing PRIVATE PROCESSING_EXPORTS)
 add_executable(server
     server/src/main.cpp
     server/src/server.cpp
-    server/src/httprequestbuilder.cpp
+    server/src/connection.cpp
 )
 
 target_compile_features(server PRIVATE cxx_std_23)
