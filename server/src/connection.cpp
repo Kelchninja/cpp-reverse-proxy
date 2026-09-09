@@ -1,5 +1,7 @@
 #include "connection.hpp"
 #include "llhttp.h"
+#include <asio/co_spawn.hpp>
+#include <asio/detached.hpp>
 #include <asio/ip/tcp.hpp>
 
 namespace
@@ -30,21 +32,34 @@ namespace server
         parser_.data = this; // return route to this instance
     }
 
-    void Connection::start() { do_read(); }
-
-    void Connection::do_read()
+    asio::awaitable<http::HttpRequest> Connection::async_read_request()
     {
-        socket_.async_read_some(buf_.prepare(8192),
-            [this, self{shared_from_this()}](std::error_code ec, size_t n) {
-                if (ec) return;
-                buf_.commit(n);
+        if (llhttp_get_errno(&parser_) == HPE_PAUSED)
+        {
+            llhttp_resume(&parser_);
+        }
 
-                auto data = asio::buffer_cast<const char*>(buf_.data());
-                llhttp_execute(&parser_, data, n);
+        while (true) {
+            std::error_code ec;
+            size_t n = co_await socket_.async_read_some(
+                buf_.prepare(8192),
+                asio::redirect_error(asio::use_awaitable, ec));
 
-                buf_.consume(n);
-                do_read();
-            });
+            if (ec) throw std::runtime_error("connection closed");
+
+            buf_.commit(n);
+            auto data = asio::buffer_cast<const char*>(buf_.data());
+            auto err = llhttp_execute(&parser_, data, n);
+            buf_.consume(n);
+
+            if (err != HPE_OK && err != HPE_PAUSED)
+                throw std::runtime_error("parse error");
+
+            if (request_ready_) {
+                request_ready_ = false;
+                co_return std::move(*current_request_);
+            }
+        }
     }
 
     int Connection::on_url(llhttp_t *parser, const char *at, size_t len)
@@ -88,12 +103,12 @@ namespace server
     int Connection::on_message_complete(llhttp_t* parser)
     {
         auto* self{getInstancePtr(parser)};
-        auto method = static_cast<http::HttpMethod>(parser->method);
+        auto method{static_cast<http::HttpMethod>(parser->method)};
         self->builder_.set_method(method);
         self->builder_.set_version({parser->http_major, parser->http_minor});
-        
 
-        auto req{std::move(self->builder_).build()};
-        return 0;
+        self->current_request_.emplace(std::move(self->builder_).build());
+        self->request_ready_ = true;
+        return HPE_PAUSED; // pause parser until request is collected
     }
 }

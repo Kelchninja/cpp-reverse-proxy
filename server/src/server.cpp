@@ -115,19 +115,6 @@ asio::awaitable<void> Server::process()
 asio::awaitable<void> handleClient(asio::ip::tcp::socket socket)
 {
     bool msg_completed{false};
-    asio::streambuf buf;
-
-    llhttp_t parser;
-    llhttp_settings_t settings;
-    llhttp_settings_init(&settings);
-
-
-    llhttp_init(&parser, HTTP_REQUEST, &settings);
-
-    while (!msg_completed)
-    {
-        size_t bytes_read{co_await socket.async_read_some(buf)};
-    }
 
 }
 

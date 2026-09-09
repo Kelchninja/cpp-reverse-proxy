@@ -1,5 +1,7 @@
 #pragma once
 #include "httprequestbuilder.hpp"
+#include "request.hpp"
+#include <asio/awaitable.hpp>
 #include <asio/streambuf.hpp>
 #include <memory>
 #include <llhttp.h>
@@ -12,11 +14,10 @@ namespace server
     {
         public:
         Connection(asio::ip::tcp::socket);
-        void start();
         http::HttpRequestBuilder builder_;
-        
+        asio::awaitable<http::HttpRequest> async_read_request();
+
         private:
-        void do_read();
         static int on_url(llhttp_t*, const char*, size_t);
         static int on_header_field(llhttp_t*, const char*, size_t);
         static int on_header_value(llhttp_t*, const char*, size_t);
@@ -33,6 +34,9 @@ namespace server
 
         // TODO: implement this shit
         // processing::processingConfig config_;
+
+        bool request_ready_ = false;
+        std::optional<http::HttpRequest> current_request_;
 
     };
 
