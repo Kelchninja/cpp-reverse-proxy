@@ -48,23 +48,23 @@ target_link_libraries(config PUBLIC nlohmann_json::nlohmann_json)
 target_compile_features(config PUBLIC cxx_std_23)
 target_compile_options(config PRIVATE ${PROJECT_WARNING_FLAGS})
 
-# --- Processing .dll / .dylib / .so ---
-add_library(processing SHARED
-    processing/src/processing.cpp
+# --- API .dll / .dylib / .so ---
+add_library(backend_gateway SHARED
+    API/src/gateway.cpp
 )
 
-target_include_directories(processing PUBLIC
-    processing/include
+target_include_directories(backend_gateway PUBLIC
+    API/include
     common
 )
 
-target_link_libraries(processing PRIVATE config)
+target_link_libraries(backend_gateway PRIVATE config)
 
-target_compile_options(processing PRIVATE
+target_compile_options(backend_gateway PRIVATE
     $<$<NOT:$<PLATFORM_ID:Windows>>:-fvisibility=hidden>
 )
 
-target_compile_definitions(processing PRIVATE PROCESSING_EXPORTS)
+target_compile_definitions(backend_gateway PRIVATE BACKEND_GATEWAY_EXPORTS)
 
 
 # --- Server EXE ---
@@ -97,11 +97,11 @@ add_custom_command(
 add_custom_target(server_config DEPENDS ${CMAKE_BINARY_DIR}/bin/config.json)
 
 add_dependencies(server server_config)
-# add_dependencies(processing server_config)
+# add_dependencies(backend_gateway server_config)
 # add_dependencies(security server_config)
 
-# Verbindet beide: Server linkt gegen processing
-# target_link_libraries(server PRIVATE processing)
+# Verbindet beide: Server linkt gegen backend gateway
+target_link_libraries(server PRIVATE backend_gateway)
 
 
 # --- Tests ---
@@ -128,22 +128,6 @@ if(BUILD_TESTS)
     target_compile_features(server_tests PRIVATE cxx_std_23)
     target_compile_options(server_tests PRIVATE ${PROJECT_WARNING_FLAGS})
 
-    # --- Verarbeitung (processing) ---
-    
-    # add_executable(processing_tests
-    #     tests/processing/processing_tests.cpp
-    # )
-    # target_include_directories(processing_tests PRIVATE
-    #     common/include
-    # )
-    # target_link_libraries(processing_tests PRIVATE
-    #     processing
-    #     config
-    #     GTest::gtest
-    #     GTest::gtest_main
-    # )
-    # target_compile_features(processing_tests PRIVATE cxx_std_23)
-
     # --- API ---
 
     # add_executable(api_tests
@@ -155,6 +139,7 @@ if(BUILD_TESTS)
     # target_link_libraries(api_tests PRIVATE
     #     GTest::gtest
     #     GTest::gtest_main
+    #     config
     # )
     # target_compile_features(api_tests PRIVATE cxx_std_23)
     # target_compile_options(api_tests PRIVATE ${PROJECT_WARNING_FLAGS})

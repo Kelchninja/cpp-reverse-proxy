@@ -1,6 +1,8 @@
 #include "server.hpp"
 #include "config.hpp"
-#include "llhttp.h"
+#include "connection.hpp"
+#include "request.hpp"
+#include "gateway.hpp"
 #include <asio/awaitable.hpp>
 #include <asio/basic_stream_socket.hpp>
 #include <asio/co_spawn.hpp>
@@ -10,6 +12,7 @@
 #include <asio/streambuf.hpp>
 #include <asio/this_coro.hpp>
 #include <cstddef>
+#include <exception>
 #include <stdexcept>
 #include <thread>
 
@@ -114,7 +117,20 @@ asio::awaitable<void> Server::process()
 
 asio::awaitable<void> handleClient(asio::ip::tcp::socket socket)
 {
-    bool msg_completed{false};
+    auto connection{std::make_shared<Connection>(std::move(socket))};
 
+    // keep-alive
+    while (true)
+    {
+        try
+        {
+            http::HttpRequest req{co_await connection->async_read_request()};
+            gateway::send_to_backend(req);
+        } 
+        catch (const std::exception&)
+        {
+            break;
+        }
+    }
 }
 
