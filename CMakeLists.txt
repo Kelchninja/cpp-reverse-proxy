@@ -48,30 +48,12 @@ target_link_libraries(config PUBLIC nlohmann_json::nlohmann_json)
 target_compile_features(config PUBLIC cxx_std_23)
 target_compile_options(config PRIVATE ${PROJECT_WARNING_FLAGS})
 
-# --- API .dll / .dylib / .so ---
-add_library(backend_gateway SHARED
-    API/src/gateway.cpp
-)
-
-target_include_directories(backend_gateway PUBLIC
-    API/include
-    common
-)
-
-target_link_libraries(backend_gateway PRIVATE config)
-
-target_compile_options(backend_gateway PRIVATE
-    $<$<NOT:$<PLATFORM_ID:Windows>>:-fvisibility=hidden>
-)
-
-target_compile_definitions(backend_gateway PRIVATE BACKEND_GATEWAY_EXPORTS)
-
-
-# --- Server EXE ---
+# --- Server EXE (inkl. Gateway) ---
 add_executable(server
     server/src/main.cpp
     server/src/server.cpp
     server/src/connection.cpp
+    gateway/src/gateway.cpp
 )
 
 target_compile_features(server PRIVATE cxx_std_23)
@@ -79,7 +61,7 @@ target_compile_options(server PRIVATE ${PROJECT_WARNING_FLAGS})
 
 target_include_directories(server PRIVATE
     server/include
-    API/include
+    gateway/include
     common
 )
 target_link_libraries(server PRIVATE llhttp::llhttp asio::asio config)
@@ -97,11 +79,7 @@ add_custom_command(
 add_custom_target(server_config DEPENDS ${CMAKE_BINARY_DIR}/bin/config.json)
 
 add_dependencies(server server_config)
-# add_dependencies(backend_gateway server_config)
 # add_dependencies(security server_config)
-
-# Verbindet beide: Server linkt gegen backend gateway
-target_link_libraries(server PRIVATE backend_gateway)
 
 
 # --- Tests ---
@@ -116,7 +94,7 @@ if(BUILD_TESTS)
     )
     target_include_directories(server_tests PRIVATE
         server/include
-        API/include
+        gateway/include
     )
     target_link_libraries(server_tests PRIVATE
         llhttp
@@ -127,22 +105,6 @@ if(BUILD_TESTS)
     )
     target_compile_features(server_tests PRIVATE cxx_std_23)
     target_compile_options(server_tests PRIVATE ${PROJECT_WARNING_FLAGS})
-
-    # --- API ---
-
-    # add_executable(api_tests
-    #     tests/api/api_tests.cpp
-    # )
-    # target_include_directories(api_tests PRIVATE
-    #     API/include
-    # )
-    # target_link_libraries(api_tests PRIVATE
-    #     GTest::gtest
-    #     GTest::gtest_main
-    #     config
-    # )
-    # target_compile_features(api_tests PRIVATE cxx_std_23)
-    # target_compile_options(api_tests PRIVATE ${PROJECT_WARNING_FLAGS})
 
     # --- Security ---
 
@@ -180,8 +142,6 @@ if(BUILD_TESTS)
     # --- Test-Executables nach test_bin statt bin ---
     set_target_properties(
         server_tests
-        # processing_tests
-        # api_tests
         # security_tests
         config_tests
         PROPERTIES
@@ -190,8 +150,6 @@ if(BUILD_TESTS)
 
     include(GoogleTest)
     gtest_discover_tests(server_tests WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/test_bin)
-    # gtest_discover_tests(processing_tests WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/test_bin)
-    # gtest_discover_tests(api_tests WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/test_bin)
     # gtest_discover_tests(security_tests WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/test_bin)
     gtest_discover_tests(config_tests WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/test_bin)
 endif()

@@ -3,6 +3,7 @@
 #include "connection.hpp"
 #include "request.hpp"
 #include "gateway.hpp"
+#include "response.hpp"
 #include <asio/awaitable.hpp>
 #include <asio/basic_stream_socket.hpp>
 #include <asio/co_spawn.hpp>
@@ -125,7 +126,7 @@ asio::awaitable<void> handleClient(asio::ip::tcp::socket socket)
         try
         {
             http::HttpRequest req{co_await connection->async_read_request()};
-            gateway::send_to_backend(req);
+            http::HttpResponse res{co_await gateway::send_to_backend(req)};
         } 
         catch (const std::exception&)
         {
