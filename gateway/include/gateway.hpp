@@ -5,7 +5,14 @@
 
 namespace gateway
 {
-    asio::awaitable<http::HttpResponse> send_to_backend(const http::HttpRequest& req);
+    class Gateway
+    {
+        public:
+        asio::awaitable<http::HttpResponse> send_to_backend(const http::HttpRequest& req);
+
+        private:
+        
+    };
 }
 
 

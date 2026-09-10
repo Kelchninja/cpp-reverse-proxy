@@ -5,6 +5,7 @@
 
 namespace gateway
 {
+
     asio::awaitable<http::HttpResponse> send_to_backend(const http::HttpRequest& req)
     {
         using asio::ip::tcp;
@@ -19,4 +20,6 @@ namespace gateway
 
         co_return response;
     }
+
+    asio::
 }
