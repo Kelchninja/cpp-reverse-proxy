@@ -19,7 +19,7 @@ namespace http
             req_string.append("\r\n");
         }
 
-        req_string.append("\r\n"); // Leerzeile: trennt Header von Body
+        req_string.append("\r\n");
         req_string.append(req.body);
 
         return req_string;
@@ -39,7 +39,7 @@ namespace http
             res_string.append("\r\n");
         }
 
-        res_string.append("\r\n"); // Leerzeile: trennt Header von Body
+        res_string.append("\r\n");
         res_string.append(res.body);
 
         return res_string;

@@ -5,13 +5,15 @@
 #include <asio/awaitable.hpp>
 #include <asio/streambuf.hpp>
 #include <memory>
+#include <optional>
+#include <string>
 #include <llhttp.h>
 #include <asio.hpp>
 
 namespace server
 {
 
-    class Connection : std::enable_shared_from_this<Connection>
+    class Connection : public std::enable_shared_from_this<Connection>
     {
         public:
         Connection(asio::ip::tcp::socket);

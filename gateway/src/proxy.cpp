@@ -13,8 +13,6 @@ namespace
 
     constexpr std::string_view via_token{"1.1 httpserver"};
 
-    // Header-Namen kommen aus dem Parser bereits lowercase (siehe on_header_value_complete),
-    // daher reicht hier ein direkter Vergleich.
     constexpr std::array<std::string_view, 8> hop_by_hop{
         "connection",
         "keep-alive",
@@ -64,8 +62,6 @@ namespace
         return out;
     }
 
-    // Entfernt die standardisierten Hop-by-hop-Header plus alles,
-    // was der Connection-Header selbst noch namentlich aufzaehlt.
     void strip_hop_by_hop(Headers& headers)
     {
         std::vector<std::string> listed;
@@ -98,7 +94,6 @@ namespace gateway
 {
     void prepare_upstream_request(http::HttpRequest& req, const asio::ip::tcp::endpoint& client)
     {
-        // Host sichern, bevor die Header angefasst werden
         std::string original_host;
         if (const auto* host{find_header(req.headers, "host")})
         {
@@ -107,8 +102,6 @@ namespace gateway
 
         strip_hop_by_hop(req.headers);
 
-        // Edge-Proxy: X-Forwarded-For wird ersetzt, nicht ergaenzt.
-        // Ein vom Client mitgeschickter Wert ist nicht vertrauenswuerdig.
         set_header(req.headers, "x-forwarded-for", client.address().to_string());
         set_header(req.headers, "x-forwarded-proto", "http");
         if (!original_host.empty())
@@ -117,11 +110,8 @@ namespace gateway
         }
         append_header(req.headers, "via", via_token);
 
-        // Der Body liegt bereits entpackt vor (llhttp loest chunked auf),
-        // Transfer-Encoding ist durch strip_hop_by_hop weg.
         set_content_length(req.headers, req.body.size());
 
-        // Pro Request eine frische Backend-Verbindung, siehe Gateway::send_to_backend
         set_header(req.headers, "connection", "close");
     }
 
@@ -130,8 +120,6 @@ namespace gateway
         strip_hop_by_hop(res.headers);
         append_header(res.headers, "via", via_token);
 
-        // 1xx und 204 duerfen keine Content-Length tragen, 304 nur die des
-        // hypothetischen Bodys - die kennen wir nicht, also weglassen.
         const bool no_content_length{res.status_code / 100 == 1
             || res.status_code == 204
             || res.status_code == 304};

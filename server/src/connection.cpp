@@ -18,6 +18,22 @@ namespace
         std::transform(s.begin(), s.end(), s.begin(),
             [](unsigned char c) { return std::tolower(c); });
     }
+
+    http::HttpMethod map_method(llhttp_method_t m)
+    {
+        switch (m) {
+            case HTTP_GET:     return http::HttpMethod::GET;
+            case HTTP_HEAD:    return http::HttpMethod::HEAD;
+            case HTTP_POST:    return http::HttpMethod::POST;
+            case HTTP_PUT:     return http::HttpMethod::PUT;
+            case HTTP_DELETE:  return http::HttpMethod::DELETE;
+            case HTTP_CONNECT: return http::HttpMethod::CONNECT;
+            case HTTP_OPTIONS: return http::HttpMethod::OPTIONS;
+            case HTTP_TRACE:   return http::HttpMethod::TRACE;
+            case HTTP_PATCH:   return http::HttpMethod::PATCH;
+            default:           return http::HttpMethod::UNKNOWN;
+        }
+    }
 }
 
 
@@ -50,17 +66,24 @@ namespace server
         }
 
         while (true) {
-            std::error_code ec;
-            size_t n = co_await socket_.async_read_some(
-                buf_.prepare(8192),
-                asio::redirect_error(asio::use_awaitable, ec));
+            if (buf_.size() == 0) {
+                std::error_code ec;
+                size_t n = co_await socket_.async_read_some(
+                    buf_.prepare(8192),
+                    asio::redirect_error(asio::use_awaitable, ec));
 
-            if (ec) throw std::runtime_error("connection closed");
+                if (ec) throw std::runtime_error("connection closed");
+                buf_.commit(n);
+            }
 
-            buf_.commit(n);
             auto data = asio::buffer_cast<const char*>(buf_.data());
-            auto err = llhttp_execute(&parser_, data, n);
-            buf_.consume(n);
+            auto size = buf_.size();
+            auto err = llhttp_execute(&parser_, data, size);
+
+            size_t consumed{err == HPE_PAUSED
+                ? static_cast<size_t>(llhttp_get_error_pos(&parser_) - data)
+                : size};
+            buf_.consume(consumed);
 
             if (err != HPE_OK && err != HPE_PAUSED)
                 throw std::runtime_error("parse error");
@@ -127,7 +150,7 @@ namespace server
     int Connection::on_message_complete(llhttp_t* parser)
     {
         auto* self{getInstancePtr(parser)};
-        self->current_request_->method = static_cast<http::HttpMethod>(parser->method);
+        self->current_request_->method = map_method(static_cast<llhttp_method_t>(parser->method));
         self->current_request_->version = {parser->http_major, parser->http_minor};
 
         self->request_ready_ = true;

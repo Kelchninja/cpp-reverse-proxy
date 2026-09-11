@@ -58,17 +58,36 @@ namespace server
         }
 
         while (true) {
-            std::error_code ec;
-            size_t n = co_await socket_.async_read_some(
-                buf_.prepare(8192),
-                asio::redirect_error(asio::use_awaitable, ec));
+            bool eof{false};
 
-            if (ec) throw std::runtime_error("upstream connection closed");
+            if (buf_.size() == 0) {
+                std::error_code ec;
+                size_t n = co_await socket_.async_read_some(
+                    buf_.prepare(8192),
+                    asio::redirect_error(asio::use_awaitable, ec));
 
-            buf_.commit(n);
-            auto data = asio::buffer_cast<const char*>(buf_.data());
-            auto err = llhttp_execute(&parser_, data, n);
-            buf_.consume(n);
+                if (ec == asio::error::eof) {
+                    eof = true;
+                } else if (ec) {
+                    throw std::runtime_error("upstream connection closed");
+                } else {
+                    buf_.commit(n);
+                }
+            }
+
+            llhttp_errno_t err{HPE_OK};
+            if (eof) {
+                err = llhttp_finish(&parser_);
+            } else {
+                auto data = asio::buffer_cast<const char*>(buf_.data());
+                auto size = buf_.size();
+                err = llhttp_execute(&parser_, data, size);
+
+                size_t consumed{err == HPE_PAUSED
+                    ? static_cast<size_t>(llhttp_get_error_pos(&parser_) - data)
+                    : size};
+                buf_.consume(consumed);
+            }
 
             if (err != HPE_OK && err != HPE_PAUSED)
                 throw std::runtime_error("parse error");
@@ -79,6 +98,8 @@ namespace server
                 current_response_.emplace(); // fresh target for the next keep-alive response
                 co_return response;
             }
+
+            if (eof) throw std::runtime_error("upstream closed before response was complete");
         }
     }
 
