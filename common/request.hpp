@@ -1,6 +1,7 @@
 #pragma once
 
 #include "http_types.hpp"
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -11,10 +12,10 @@ namespace http
 
     struct HttpRequest
     {
-        const HttpMethod method;
-        const std::string path;
-        const HttpVersion version;
-        const std::vector<std::pair<std::string, std::string>> headers;
-        const std::string body;
+        HttpMethod method = HttpMethod::UNKNOWN;
+        std::string path;
+        HttpVersion version{1, 1};
+        std::vector<std::pair<std::string, std::string>> headers;
+        std::string body;
     };
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "config.hpp"
+#include "gateway.hpp"
 #include <asio.hpp>
 #include <asio/io_context.hpp>
 #include <thread>
@@ -12,7 +13,10 @@ namespace server
     class Server
     {
         public:
-        Server(asio::io_context&, asio::ip::tcp::acceptor, const config::ServerConfig&);
+        Server(asio::io_context&, 
+            asio::ip::tcp::acceptor,
+            gateway::Gateway&, 
+            const config::ServerConfig&);
         virtual ~Server();
 
         void init();
@@ -29,6 +33,7 @@ namespace server
         std::vector<std::jthread> threads_;
         asio::io_context& io_context_;
         asio::ip::tcp::acceptor acceptor_;
+        gateway::Gateway& gateway_;
         config::ServerConfig config_;
     };
 

@@ -1,4 +1,5 @@
 #include "config.hpp"
+#include "gateway.hpp"
 #include "server.hpp"
 #include <asio.hpp>
 #include <asio/ip/address_v4.hpp>
@@ -12,9 +13,15 @@ int main()
     // configuration loading
     std::filesystem::path config_path{"config.json"};
     config::ServerConfig server_config = config::ServerConfig::load(config_path);
+    config::GatewayConfig gateway_config = config::GatewayConfig::load(config_path);
 
-    std::println("config loaded - running cores: {} (auto-detect: {})", 
+    std::println("config loaded - running cores: {} (auto-detect: {})",
         server_config.available_cores, server_config.auto_detect_cores);
+    std::println("gateway config loaded - backend at {}:{}",
+        gateway_config.ipv4, gateway_config.port);
+
+    // initialize gateway
+    gateway::Gateway gateway{gateway_config};
 
     // setting up server IO
     asio::io_context io;
@@ -23,7 +30,7 @@ int main()
             server_config.port}};
 
     // creating server
-    server::Server server{io, std::move(acceptor), server_config};
+    server::Server server{io, std::move(acceptor), gateway, server_config};
     server.init();
 
     std::println("server initialized - listening on {}:{}", 

@@ -6,9 +6,10 @@
         "port": 8080
     },
 
-    "security": {},
+    "gateway": {
+        "IPv4": "127.0.0.1",
+        "port": 3000
+    },
 
-    "processing": {},
-
-    "api": {}
+    "security": {}
 }

@@ -6,6 +6,7 @@
 
 namespace config
 {
+
     struct ServerConfig
     {
         const bool auto_detect_cores;
@@ -17,5 +18,16 @@ namespace config
         
         private:
         ServerConfig(bool, size_t, std::string, uint16_t);
+    };
+
+    struct GatewayConfig
+    {
+        const std::string ipv4;
+        const uint16_t port;
+
+        static GatewayConfig load(const std::filesystem::path&);
+
+        private:
+        GatewayConfig(std::string, uint16_t);
     };
 }

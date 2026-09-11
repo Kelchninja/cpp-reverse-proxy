@@ -1,25 +1,34 @@
 #include "gateway.hpp"
+#include "connection.hpp"
+#include "proxy.hpp"
 #include "request.hpp"
 #include "response.hpp"
 #include <asio.hpp>
+#include <memory>
 
 namespace gateway
 {
 
-    asio::awaitable<http::HttpResponse> send_to_backend(const http::HttpRequest& req)
+    Gateway::Gateway(const config::GatewayConfig& config)
+    : config_{config},
+      endpoint_{asio::ip::make_address_v4(config_.ipv4), config_.port} {}
+
+    asio::awaitable<http::HttpResponse> Gateway::send_to_backend(http::HttpRequest req, asio::ip::tcp::endpoint client)
     {
         using asio::ip::tcp;
 
+        prepare_upstream_request(req, client);
+
         tcp::socket backend_socket{co_await asio::this_coro::executor};
 
-        co_await backend_socket.async_connect(flask_endpoint, asio::use_awaitable);
-        std::string raw_request = serialize_request(req);
-        co_await asio::async_write(backend_socket, asio::buffer(raw_request), asio::use_awaitable);
+        co_await backend_socket.async_connect(endpoint_, asio::use_awaitable);
 
-        http::HttpResponse response = co_await read_and_parse_response(backend_socket);
+        auto upstream{std::make_shared<server::UpstreamConnection>(std::move(backend_socket))};
+        co_await upstream->send_request(req);
 
-        co_return response;
+        http::HttpResponse res{co_await upstream->async_read_response()};
+        prepare_downstream_response(res);
+        co_return res;
     }
 
-    asio::
 }

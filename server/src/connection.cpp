@@ -1,14 +1,22 @@
 #include "connection.hpp"
 #include "llhttp.h"
+#include <algorithm>
 #include <asio/co_spawn.hpp>
 #include <asio/detached.hpp>
 #include <asio/ip/tcp.hpp>
+#include <cctype>
 
 namespace
 {
     inline server::Connection* getInstancePtr(llhttp_t *p)
     {
         return static_cast<server::Connection*>(p->data);
+    }
+
+    inline void to_lower(std::string& s)
+    {
+        std::transform(s.begin(), s.end(), s.begin(),
+            [](unsigned char c) { return std::tolower(c); });
     }
 }
 
@@ -18,7 +26,7 @@ namespace server
     Connection::Connection(asio::ip::tcp::socket client_socket): socket_{std::move(client_socket)}
     {
         llhttp_settings_init(&settings_);
-        
+
         // callback mapping
         settings_.on_url = on_url;
         settings_.on_header_field = on_header_field;
@@ -30,6 +38,8 @@ namespace server
         // init parser
         llhttp_init(&parser_, HTTP_REQUEST, &settings_);
         parser_.data = this; // return route to this instance
+
+        current_request_.emplace();
     }
 
     asio::awaitable<http::HttpRequest> Connection::async_read_request()
@@ -57,14 +67,27 @@ namespace server
 
             if (request_ready_) {
                 request_ready_ = false;
-                co_return std::move(*current_request_);
+                http::HttpRequest request{std::move(*current_request_)};
+                current_request_.emplace(); // fresh target for the next keep-alive request
+                co_return request;
             }
         }
     }
 
+    asio::awaitable<void> Connection::send_response(const http::HttpResponse& res)
+    {
+        std::string raw_response{serializer_.serialize_response(res)};
+        co_await asio::async_write(socket_, asio::buffer(raw_response), asio::use_awaitable);
+    }
+
+    asio::ip::tcp::endpoint Connection::remote_endpoint() const
+    {
+        return socket_.remote_endpoint();
+    }
+
     int Connection::on_url(llhttp_t *parser, const char *at, size_t len)
     {
-        getInstancePtr(parser)->builder_.append_url(at, len);
+        getInstancePtr(parser)->current_request_->path.append(at, len);
         return 0;
     }
 
@@ -83,8 +106,9 @@ namespace server
     int Connection::on_header_value_complete(llhttp_t *parser)
     {
         auto* self{getInstancePtr(parser)};
-        self->builder_.add_header(
-            std::move(self->current_header_field_), 
+        to_lower(self->current_header_field_);
+        self->current_request_->headers.emplace_back(
+            std::move(self->current_header_field_),
             std::move(self->current_header_value_)
         );
 
@@ -96,19 +120,18 @@ namespace server
 
     int Connection::on_body(llhttp_t *parser, const char *at, size_t len)
     {
-        getInstancePtr(parser)->builder_.append_body(at, len);
+        getInstancePtr(parser)->current_request_->body.append(at, len);
         return 0;
     }
 
     int Connection::on_message_complete(llhttp_t* parser)
     {
         auto* self{getInstancePtr(parser)};
-        auto method{static_cast<http::HttpMethod>(parser->method)};
-        self->builder_.set_method(method);
-        self->builder_.set_version({parser->http_major, parser->http_minor});
+        self->current_request_->method = static_cast<http::HttpMethod>(parser->method);
+        self->current_request_->version = {parser->http_major, parser->http_minor};
 
-        self->current_request_.emplace(std::move(self->builder_).build());
         self->request_ready_ = true;
         return HPE_PAUSED; // pause parser until request is collected
     }
+
 }

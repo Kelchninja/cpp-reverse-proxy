@@ -25,5 +25,25 @@ namespace http
         return req_string;
     }
 
+    std::string HttpSerializer::serialize_response(const HttpResponse& res) const
+    {
+        std::string res_string;
+        res_string.append(http::toString(res.version)).append(" ");
+        res_string.append(std::to_string(res.status_code)).append(" ");
+        res_string.append(res.status_message);
+        res_string.append("\r\n");
+
+        for (const auto& pair : res.headers)
+        {
+            res_string.append(pair.first).append(": ").append(pair.second);
+            res_string.append("\r\n");
+        }
+
+        res_string.append("\r\n"); // Leerzeile: trennt Header von Body
+        res_string.append(res.body);
+
+        return res_string;
+    }
+
 }
 

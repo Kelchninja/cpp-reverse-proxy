@@ -55,6 +55,8 @@ add_executable(server
     server/src/connection.cpp
     gateway/src/gateway.cpp
     gateway/src/serializer.cpp
+    gateway/src/proxy.cpp
+    server/src/upstreamconnection.cpp
 )
 
 target_compile_features(server PRIVATE cxx_std_23)

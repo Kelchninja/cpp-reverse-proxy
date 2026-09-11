@@ -52,5 +52,30 @@ namespace config
 
     ServerConfig::ServerConfig(bool auto_detect_cores, size_t available_cores, std::string ipv4, uint16_t port)
     : auto_detect_cores{auto_detect_cores}, available_cores{available_cores}, ipv4{ipv4}, port{port} {}
+
+
+    // gatway config
+    GatewayConfig GatewayConfig::load(const std::filesystem::path& path)
+    {
+        try
+        {
+            const auto j = load_json(path);
+            const auto& head{j.at("gateway")};
+
+            auto ipv4 {head.at("IPv4").get<std::string>()};
+            auto port{head.at("port").get<uint16_t>()};
+
+            return GatewayConfig{ipv4, port};
+        }
+        catch (const nlohmann::json::exception& e)
+        {
+            throw std::runtime_error{"Failed to parse gateway config '" + path.string() + "': " + e.what()};
+        }
+    }
+
+    GatewayConfig::GatewayConfig(std::string ipv4, uint16_t port)
+    : ipv4{ipv4}, port{port} {}
+
+
 }
 

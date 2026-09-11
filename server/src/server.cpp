@@ -28,8 +28,8 @@ namespace {
 
 using namespace server;
 
-Server::Server(asio::io_context& io_context, asio::ip::tcp::acceptor acceptor, const config::ServerConfig& config)
-: state_{State::uninitialized}, io_context_{io_context}, acceptor_{std::move(acceptor)}, config_{config} {}
+Server::Server(asio::io_context& io_context, asio::ip::tcp::acceptor acceptor, gateway::Gateway& gateway, const config::ServerConfig& config)
+: state_{State::uninitialized}, io_context_{io_context}, acceptor_{std::move(acceptor)}, gateway_{gateway}, config_{config} {}
 
 Server::~Server()
 {
@@ -116,7 +116,7 @@ asio::awaitable<void> Server::process()
 }
 
 
-asio::awaitable<void> handleClient(asio::ip::tcp::socket socket)
+asio::awaitable<void> Server::handleClient(asio::ip::tcp::socket socket)
 {
     auto connection{std::make_shared<Connection>(std::move(socket))};
 
@@ -126,7 +126,8 @@ asio::awaitable<void> handleClient(asio::ip::tcp::socket socket)
         try
         {
             http::HttpRequest req{co_await connection->async_read_request()};
-            http::HttpResponse res{co_await gateway::send_to_backend(req)};
+            http::HttpResponse res{co_await gateway_.send_to_backend(std::move(req), connection->remote_endpoint())};
+            co_await connection->send_response(res);
         } 
         catch (const std::exception&)
         {
